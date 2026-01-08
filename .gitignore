@@ -1,0 +1,25 @@
+# Android NDK / C++ Build Artifacts
+**/obj/
+**/libs/
+fat_temp/
+objs.txt
+*.o
+*.d
+
+# Project specific
+build_logic.ps1_updated
+*.log
+
+# IDEs and Editors
+.vs/
+.vscode/
+.idea/
+*.swp
+*.bak
+*.user
+*.suo
+
+# System Files
+Thumbs.db
+Desktop.ini
+.DS_Store
