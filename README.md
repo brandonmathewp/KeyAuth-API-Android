@@ -4,7 +4,7 @@ A high-performance, standalone version of the KeyAuth C++ library for Android. T
 
 ## Why use this?
 *   **All-in-one:** No more messing with separate `libcurl`, `libsodium`, or `openssl` files. Everything is inside `libkeyauth.a`.
-*   **Encrypted Strings:** Uses `oxorany` to automatically protect your sensitive strings from memory scanners and reverse engineering.
+*   **Encrypted Strings:** Uses `OBFUSCATE` to automatically protect your sensitive strings from memory scanners and reverse engineering.
 *   **Plug & Play:** Just include one header and link one library. It's that simple.
 
 ## Project Structure
@@ -42,21 +42,26 @@ target_link_libraries(your_app_target keyauth log android)
 ```
 3.  Include it in your code: `#include "KeyAuth.hpp"`.
 
-## Configuration
+## Windows Configuration
 Before building, you **must** set your Android NDK path in both files:
 1.  In `build.bat`: Update `set "NDK_ROOT=..."`
 2.  In `build_logic.ps1`: Update `$NDK_ROOT = "..."`
 
+## Android/Linux Configuration
+Before building, you **must** set your Android NDK path:
+1.  In `build.sh`: Update `NDK_ROOT="$HOME/..."`
+
 ## Automation
-Running `build.bat` at the root will automatically:
+Running the build script at the root will automatically:
 1.  Recompile the core library.
 2.  Merge it with dependencies into a fresh `libkeyauth.a`.
 3.  Update the `prebuilt/` and `KeyAuth_Example/` folders.
 
+
 ## Credits
 Built using these open-source projects:
 *   [KeyAuth](https://keyauth.cc/) - Licensing & Auth
-*   [Oxorany](https://github.com/llxiaoyuan/oxorany) - String Obfuscation
+*   [Obfuscate](https://github.com/JungliCode/obfuscator) - String Obfuscation
 *   [Libcurl](https://curl.se/) - Network
 *   [Libsodium](https://doc.libsodium.org/) - Encryption
 *   [OpenSSL](https://www.openssl.org/) - SSL/TLS
