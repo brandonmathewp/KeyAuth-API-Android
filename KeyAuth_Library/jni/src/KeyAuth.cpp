@@ -414,62 +414,6 @@ std::string KeyAuthApp::get_hwid() {
   return ss.str();
 }
 
-std::string KeyAuthApp::get_hash(JNIEnv *env) {
-  jclass activityThreadClass = env->FindClass(OBFUSCATE("android/app/ActivityThread"));
-  jmethodID currentApplicationMethod = env->GetStaticMethodID(activityThreadClass, OBFUSCATE("currentApplication"), OBFUSCATE("()Landroid/app/Application;"));
-  jobject context = env->CallStaticObjectMethod(activityThreadClass, currentApplicationMethod);
-
-  if (context == nullptr) {
-      return OBFUSCATE("Error: Could not obtain application context.");
-  }
-
-  jclass contextClass = env->GetObjectClass(context);
-  jmethodID getPackageCodePathMethod = env->GetMethodID(contextClass, OBFUSCATE("getPackageCodePath"), OBFUSCATE("()Ljava/lang/String;"));
-  jstring apkPath = (jstring) env->CallObjectMethod(context, getPackageCodePathMethod);
-
-  if (apkPath == nullptr) {
-      return OBFUSCATE("Error: Could not obtain APK path.");
-  }
-
-  const char *apkPathStr = env->GetStringUTFChars(apkPath, nullptr);
-
-  FILE *file = fopen(apkPathStr, OBFUSCATE("rb"));
-  if (!file) {
-      env->ReleaseStringUTFChars(apkPath, apkPathStr);
-      return OBFUSCATE("Error: Could not open APK file via C standard I/O.");
-  }
-
-  SHA256_CTX sha256;
-  SHA256_Init(&sha256);
-
-  const int bufferSize = 65536; 
-  unsigned char buffer[bufferSize];
-  size_t bytesRead;
-
-  while ((bytesRead = fread(buffer, 1, bufferSize, file)) > 0) {
-      SHA256_Update(&sha256, buffer, bytesRead);
-  }
-
-  if (ferror(file)) {
-      fclose(file);
-      env->ReleaseStringUTFChars(apkPath, apkPathStr);
-      return OBFUSCATE("Error: Failed while reading APK stream.");
-  }
-
-  fclose(file);
-  env->ReleaseStringUTFChars(apkPath, apkPathStr);
-
-  unsigned char hash[SHA256_DIGEST_LENGTH];
-  SHA256_Final(hash, &sha256);
-
-  std::stringstream ss;
-  for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-      ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-  }
-
-  return ss.str();
-}
-
 std::string KeyAuthApp::req(json data) {
   CURL *curl = curl_easy_init();
   std::string response_string;
