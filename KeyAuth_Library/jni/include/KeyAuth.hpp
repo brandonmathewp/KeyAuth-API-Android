@@ -43,7 +43,6 @@ public:
   bool change_username(std::string newname);
   bool logout();
   std::vector<uint8_t> download(std::string fileid);
-  std::string get_hash(JNIEnv *env);
 
 private:
   static size_t WriteCallback(void *contents, size_t size, size_t nmemb,
