@@ -49,14 +49,17 @@ Before building, you **must** set your Android NDK path in both files:
 
 ## Android/Linux Configuration
 Before building, you **must** set your Android NDK path:
-1.  In `build.sh`: Update `NDK_ROOT="$HOME/..."`
+1.  Make the `build.sh` file executable by running `chmod +x build.sh`.
+2.  In `build.sh`: Update `NDK_ROOT="$HOME/..."`
+
+## Cleaning
+Running `build.sh clean` will clean temporary folders and build files.
 
 ## Automation
 Running the build script at the root will automatically:
 1.  Recompile the core library.
 2.  Merge it with dependencies into a fresh `libkeyauth.a`.
 3.  Update the `prebuilt/` and `KeyAuth_Example/` folders.
-
 
 ## Credits
 Built using these open-source projects:
