@@ -16,7 +16,6 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/internal_headers
 
 LOCAL_SRC_FILES := \
-    src/KeyAuth.cpp \
-    src/oxorany.cpp
+    src/KeyAuth.cpp
 
 include $(BUILD_STATIC_LIBRARY)
