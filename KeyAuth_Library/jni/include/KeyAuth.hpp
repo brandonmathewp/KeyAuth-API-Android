@@ -31,6 +31,7 @@ public:
   bool register_user(std::string user, std::string pass, std::string key);
   bool upgrade(std::string user, std::string key);
   bool license(std::string key);
+  bool fetchStats();
   std::string var(std::string varid);
   std::string getvar(std::string varid);
   bool setvar(std::string varid, std::string vardata);
