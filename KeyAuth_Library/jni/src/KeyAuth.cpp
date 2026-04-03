@@ -1,5 +1,5 @@
 #include "KeyAuth.hpp"
-#include "oxorany_include.h"
+#include <obfuscate.h>
 #include <cstring>
 #include <curl/curl.h>
 #include <iomanip>
@@ -7,12 +7,14 @@
 #include <sstream>
 #include <sys/system_properties.h>
 #include <vector>
-
+#include <cstdlib>
+#include <openssl/sha.h>
+#include <stdio.h>
 
 KeyAuthApp::KeyAuthApp(std::string name, std::string ownerid,
                        std::string version)
     : name(name), ownerid(ownerid), version(version) {
-  this->url = oxorany("https://keyauth.win/api/1.3/");
+  this->url = OBFUSCATE("https://keyauth.win/api/1.3/");
 }
 
 size_t KeyAuthApp::WriteCallback(void *contents, size_t size, size_t nmemb,
@@ -21,25 +23,25 @@ size_t KeyAuthApp::WriteCallback(void *contents, size_t size, size_t nmemb,
   return size * nmemb;
 }
 
-bool KeyAuthApp::init() {
+bool KeyAuthApp::init(std::string hash) {
   if (initialized)
     return true;
 
   json data;
-  data[oxorany("type")] = oxorany("init");
-  data[oxorany("ver")] = version;
-  data[oxorany("hash")] = oxorany("null");
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("init");
+  data[OBFUSCATE("ver")] = version;
+  data[OBFUSCATE("hash")] = hash.empty() ? OBFUSCATE("null") : hash;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
-  if (response == oxorany("KeyAuth_Invalid"))
+  if (response == OBFUSCATE("KeyAuth_Invalid"))
     return false;
 
   try {
     auto j = json::parse(response);
-    if (j[oxorany("success")]) {
-      sessionid = j[oxorany("sessionid")];
+    if (j[OBFUSCATE("success")]) {
+      sessionid = j[OBFUSCATE("sessionid")];
       initialized = true;
       return true;
     }
@@ -54,19 +56,19 @@ bool KeyAuthApp::login(std::string user, std::string pass) {
       return false;
 
   json data;
-  data[oxorany("type")] = oxorany("login");
-  data[oxorany("username")] = user;
-  data[oxorany("pass")] = pass;
-  data[oxorany("hwid")] = get_hwid();
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("login");
+  data[OBFUSCATE("username")] = user;
+  data[OBFUSCATE("pass")] = pass;
+  data[OBFUSCATE("hwid")] = get_hwid();
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    if (j[oxorany("success")]) {
-      load_user_data(j[oxorany("info")]);
+    if (j[OBFUSCATE("success")]) {
+      load_user_data(j[OBFUSCATE("info")]);
       return true;
     }
   } catch (...) {
@@ -81,20 +83,20 @@ bool KeyAuthApp::register_user(std::string user, std::string pass,
       return false;
 
   json data;
-  data[oxorany("type")] = oxorany("register");
-  data[oxorany("username")] = user;
-  data[oxorany("pass")] = pass;
-  data[oxorany("key")] = key;
-  data[oxorany("hwid")] = get_hwid();
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("register");
+  data[OBFUSCATE("username")] = user;
+  data[OBFUSCATE("pass")] = pass;
+  data[OBFUSCATE("key")] = key;
+  data[OBFUSCATE("hwid")] = get_hwid();
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    if (j[oxorany("success")]) {
-      load_user_data(j[oxorany("info")]);
+    if (j[OBFUSCATE("success")]) {
+      load_user_data(j[OBFUSCATE("info")]);
       return true;
     }
   } catch (...) {
@@ -108,17 +110,17 @@ bool KeyAuthApp::upgrade(std::string user, std::string key) {
       return false;
 
   json data;
-  data[oxorany("type")] = oxorany("upgrade");
-  data[oxorany("username")] = user;
-  data[oxorany("key")] = key;
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("upgrade");
+  data[OBFUSCATE("username")] = user;
+  data[OBFUSCATE("key")] = key;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    return j[oxorany("success")];
+    return j[OBFUSCATE("success")];
   } catch (...) {
   }
   return false;
@@ -130,18 +132,40 @@ bool KeyAuthApp::license(std::string key) {
       return false;
 
   json data;
-  data[oxorany("type")] = oxorany("license");
-  data[oxorany("key")] = key;
-  data[oxorany("hwid")] = get_hwid();
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("license");
+  data[OBFUSCATE("key")] = key;
+  data[OBFUSCATE("hwid")] = get_hwid();
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    if (j[oxorany("success")]) {
-      load_user_data(j[oxorany("info")]);
+    if (j[OBFUSCATE("success")]) {
+      load_user_data(j[OBFUSCATE("info")]);
+      return true;
+    }
+  } catch (...) {
+  }
+  return false;
+}
+
+bool KeyAuthApp::fetchStats() {
+  if (!initialized)
+    return false;
+
+  json data;
+  data[OBFUSCATE("type")] = OBFUSCATE("fetchStats");
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
+
+  std::string response = req(data);
+  try {
+    auto j = json::parse(response);
+    if (j[OBFUSCATE("success")]) {
+      load_app_data(j[OBFUSCATE("appinfo")]);
       return true;
     }
   } catch (...) {
@@ -154,17 +178,17 @@ std::string KeyAuthApp::var(std::string varid) {
     return "";
 
   json data;
-  data[oxorany("type")] = oxorany("var");
-  data[oxorany("varid")] = varid;
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("var");
+  data[OBFUSCATE("varid")] = varid;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    if (j[oxorany("success")]) {
-      return j[oxorany("message")];
+    if (j[OBFUSCATE("success")]) {
+      return j[OBFUSCATE("message")];
     }
   } catch (...) {
   }
@@ -176,17 +200,17 @@ std::string KeyAuthApp::getvar(std::string varid) {
     return "";
 
   json data;
-  data[oxorany("type")] = oxorany("getvar");
-  data[oxorany("var")] = varid;
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("getvar");
+  data[OBFUSCATE("var")] = varid;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    if (j[oxorany("success")]) {
-      return j[oxorany("response")];
+    if (j[OBFUSCATE("success")]) {
+      return j[OBFUSCATE("response")];
     }
   } catch (...) {
   }
@@ -198,17 +222,17 @@ bool KeyAuthApp::setvar(std::string varid, std::string vardata) {
     return false;
 
   json data;
-  data[oxorany("type")] = oxorany("setvar");
-  data[oxorany("var")] = varid;
-  data[oxorany("data")] = vardata;
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("setvar");
+  data[OBFUSCATE("var")] = varid;
+  data[OBFUSCATE("data")] = vardata;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    return j[oxorany("success")];
+    return j[OBFUSCATE("success")];
   } catch (...) {
   }
   return false;
@@ -219,15 +243,15 @@ bool KeyAuthApp::ban() {
     return false;
 
   json data;
-  data[oxorany("type")] = oxorany("ban");
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("ban");
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    return j[oxorany("success")];
+    return j[OBFUSCATE("success")];
   } catch (...) {
   }
   return false;
@@ -239,20 +263,20 @@ std::string KeyAuthApp::webhook(std::string webid, std::string param,
     return "";
 
   json data;
-  data[oxorany("type")] = oxorany("webhook");
-  data[oxorany("webid")] = webid;
-  data[oxorany("params")] = param;
-  data[oxorany("body")] = body;
-  data[oxorany("conttype")] = conttype;
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("webhook");
+  data[OBFUSCATE("webid")] = webid;
+  data[OBFUSCATE("params")] = param;
+  data[OBFUSCATE("body")] = body;
+  data[OBFUSCATE("conttype")] = conttype;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    if (j[oxorany("success")]) {
-      return j[oxorany("message")];
+    if (j[OBFUSCATE("success")]) {
+      return j[OBFUSCATE("message")];
     }
   } catch (...) {
   }
@@ -264,15 +288,34 @@ bool KeyAuthApp::check() {
     return false;
 
   json data;
-  data[oxorany("type")] = oxorany("check");
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("check");
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    return j[oxorany("success")];
+    return j[OBFUSCATE("success")];
+  } catch (...) {
+  }
+  return false;
+}
+
+bool KeyAuthApp::checkblacklist() {
+  if (!initialized)
+    return false;
+
+  json data;
+  data[OBFUSCATE("type")] = OBFUSCATE("checkblacklist");
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
+
+  std::string response = req(data);
+  try {
+    auto j = json::parse(response);
+    return j[OBFUSCATE("success")];
   } catch (...) {
   }
   return false;
@@ -283,11 +326,11 @@ void KeyAuthApp::log(std::string message) {
     return;
 
   json data;
-  data[oxorany("type")] = oxorany("log");
-  data[oxorany("message")] = message;
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("log");
+  data[OBFUSCATE("message")] = message;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   req(data);
 }
@@ -297,16 +340,16 @@ bool KeyAuthApp::change_username(std::string newname) {
     return false;
 
   json data;
-  data[oxorany("type")] = oxorany("changeUsername");
-  data[oxorany("newUsername")] = newname;
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("changeUsername");
+  data[OBFUSCATE("newUsername")] = newname;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    return j[oxorany("success")];
+    return j[OBFUSCATE("success")];
   } catch (...) {
   }
   return false;
@@ -317,27 +360,55 @@ bool KeyAuthApp::logout() {
     return false;
 
   json data;
-  data[oxorany("type")] = oxorany("logout");
-  data[oxorany("sessionid")] = sessionid;
-  data[oxorany("name")] = name;
-  data[oxorany("ownerid")] = ownerid;
+  data[OBFUSCATE("type")] = OBFUSCATE("logout");
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
     auto j = json::parse(response);
-    return j[oxorany("success")];
+    return j[OBFUSCATE("success")];
   } catch (...) {
   }
   return false;
 }
 
+std::vector<uint8_t> KeyAuthApp::download(std::string fileid) {
+  std::vector<uint8_t> ret;
+  if (!initialized)
+    return ret;
+
+  json data;
+  data[OBFUSCATE("type")] = OBFUSCATE("file");
+  data[OBFUSCATE("fileid")] = fileid;
+  data[OBFUSCATE("sessionid")] = sessionid;
+  data[OBFUSCATE("name")] = name;
+  data[OBFUSCATE("ownerid")] = ownerid;
+
+  std::string response = req(data);
+  try {
+    auto j = json::parse(response);
+    if (j[OBFUSCATE("success")]) {
+      std::string contents = j[OBFUSCATE("contents")];
+      for (size_t i = 0; i < contents.length(); i += 2) {
+        std::string byteString = contents.substr(i, 2);
+        uint8_t byte = (uint8_t)strtol(byteString.c_str(), nullptr, 16);
+        ret.push_back(byte);
+      }
+    }
+  } catch (...) {
+  }
+  return ret;
+}
+
 std::string KeyAuthApp::get_hwid() {
-  const char *props[] = {oxorany("ro.product.manufacturer"),
-                         oxorany("ro.product.model"),
-                         oxorany("ro.board.platform"),
-                         oxorany("ro.product.cpu.abi"),
-                         oxorany("ro.serialno"),
-                         oxorany("ro.build.fingerprint")};
+  const char *props[] = {OBFUSCATE("ro.product.manufacturer"),
+                         OBFUSCATE("ro.product.model"),
+                         OBFUSCATE("ro.board.platform"),
+                         OBFUSCATE("ro.product.cpu.abi"),
+                         OBFUSCATE("ro.serialno"),
+                         OBFUSCATE("ro.build.fingerprint")};
 
   std::string raw_id = "";
   char buffer[PROP_VALUE_MAX];
@@ -346,11 +417,11 @@ std::string KeyAuthApp::get_hwid() {
     memset(buffer, 0, sizeof(buffer));
     __system_property_get(prop, buffer);
     raw_id += std::string(buffer);
-    raw_id += oxorany("|");
+    raw_id += OBFUSCATE("|");
   }
 
   if (raw_id.length() < 10) {
-    raw_id = oxorany("unknown_device_fingerprint");
+    raw_id = OBFUSCATE("unknown_device_fingerprint");
   }
 
   unsigned char hash[crypto_hash_sha256_BYTES];
@@ -406,25 +477,27 @@ std::string KeyAuthApp::req(json data) {
 }
 
 void KeyAuthApp::load_user_data(json data) {
-  user_data.username = data[oxorany("username")];
-  user_data.ip = data[oxorany("ip")];
-  user_data.hwid = data[oxorany("hwid")].is_null()
-                       ? oxorany("N/A")
-                       : data[oxorany("hwid")].get<std::string>();
-  user_data.createdate = data[oxorany("createdate")];
-  user_data.lastlogin = data[oxorany("lastlogin")];
-  if (data[oxorany("subscriptions")].is_array() &&
-      !data[oxorany("subscriptions")].empty()) {
-    user_data.expires = data[oxorany("subscriptions")][0][oxorany("expiry")];
+  user_data.username = data[OBFUSCATE("username")];
+  user_data.ip = data[OBFUSCATE("ip")];
+  user_data.hwid = data[OBFUSCATE("hwid")].is_null()
+                       ? OBFUSCATE("N/A")
+                       : data[OBFUSCATE("hwid")].get<std::string>();
+  user_data.createdate = data[OBFUSCATE("createdate")];
+  user_data.lastlogin = data[OBFUSCATE("lastlogin")];
+  if (data[OBFUSCATE("subscriptions")].is_array() &&
+      !data[OBFUSCATE("subscriptions")].empty()) {
+    user_data.expires = data[OBFUSCATE("subscriptions")][0][OBFUSCATE("expiry")];
     user_data.subscription =
-        data[oxorany("subscriptions")][0][oxorany("subscription")];
+        data[OBFUSCATE("subscriptions")][0][OBFUSCATE("subscription")];
   }
 }
 
 void KeyAuthApp::load_app_data(json data) {
-  app_data.numUsers = data[oxorany("numUsers")];
-  app_data.numKeys = data[oxorany("numKeys")];
-  app_data.app_ver = data[oxorany("version")];
-  app_data.customer_panel = data[oxorany("customerPanelLink")];
-  app_data.onlineUsers = data[oxorany("numOnlineUsers")];
+  app_data.numUsers = data[OBFUSCATE("numUsers")];
+  app_data.numKeys = data[OBFUSCATE("numKeys")];
+  app_data.app_ver = data[OBFUSCATE("version")];
+  app_data.customer_panel = data[OBFUSCATE("customerPanelLink")].is_null() 
+                                ? "" 
+                                : data[OBFUSCATE("customerPanelLink")].get<std::string>();
+  app_data.onlineUsers = data[OBFUSCATE("numOnlineUsers")];
 }

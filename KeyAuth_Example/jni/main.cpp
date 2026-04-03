@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <vector>
+#include <fstream>
 
 int main() {
   std::string name = "YourAppName";
@@ -18,6 +20,14 @@ int main() {
     return 1;
   }
   std::cout << "[+] Init Success!" << std::endl;
+
+  // --- Blacklist Test ---
+  std::cout << "[*] Checking blacklist status..." << std::endl;
+  if (app.checkblacklist()) {
+    std::cout << "[!] Device is blacklisted! Access denied." << std::endl;
+    return 1;
+  }
+  std::cout << "[+] Device is not blacklisted." << std::endl;
 
   while (true) {
     std::cout << "\n1. Login" << std::endl;
@@ -71,14 +81,15 @@ int main() {
 
     if (success) {
       std::cout << "[+] Action successful!" << std::endl;
-      break; // Break menu and show data
+      break; 
     } else {
       std::cout << "[!] Action failed!" << std::endl;
       std::this_thread::sleep_for(std::chrono::seconds(2));
     }
   }
+  
+  app.fetchStats();
 
-  // Display Application Data
   std::cout << "\n--- Application Data ---" << std::endl;
   std::cout << "App Version: " << app.app_data.app_ver << std::endl;
   std::cout << "Customer Panel Link: " << app.app_data.customer_panel
@@ -96,15 +107,33 @@ int main() {
   std::cout << "Created at: " << app.user_data.createdate << std::endl;
   std::cout << "Last login at: " << app.user_data.lastlogin << std::endl;
   std::cout << "Expires at: " << app.user_data.expires << std::endl;
+  
+  if (app.check()) {
+    std::cout << "\n[+] Session validation check: PASSED" << std::endl;
+  } else {
+    std::cout << "\n[+] Session validation check: FAILED" << std::endl;
+  }
 
-  // Test other features
-  std::cout << "\n--- Testing other functions ---" << std::endl;
-  std::cout << "[*] Testing Log function..." << std::endl;
-  app.log("Test log message from C++");
+  // --- Download File Test ---
+  std::cout << "\n--- Testing File Download ---" << std::endl;
+  std::string file_id = "xxxxxxxxxx"; // download file id here
+  std::cout << "[*] Downloading file ID: " << file_id << "..." << std::endl;
+  
+  std::vector<uint8_t> file_bytes = app.download(file_id);
+  
+  if (!file_bytes.empty()) {
+    std::cout << "[+] Download successful! Received " << file_bytes.size() << " bytes." << std::endl;
+    std::ofstream out("downloaded_test.png", std::ios::binary);
+    out.write(reinterpret_cast<const char*>(file_bytes.data()), file_bytes.size());
+    out.close();
+    std::cout << "[+] File saved as 'downloaded_test.png'" << std::endl;
+  } else {
+    std::cout << "[!] Download failed. Verify the File ID exists on the dashboard." << std::endl;
+  }
 
-  std::cout << "[*] Testing Check function..." << std::endl;
-  if (app.check())
-    std::cout << "[+] Session is valid" << std::endl;
+  // Final logs and checks
+  std::cout << "\n--- Finalizing ---" << std::endl;
+  app.log("Terminal session test completed successfully.");
 
   std::cout << "\nExiting in 5 seconds..." << std::endl;
   std::this_thread::sleep_for(std::chrono::seconds(5));

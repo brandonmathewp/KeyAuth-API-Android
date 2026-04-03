@@ -1,6 +1,9 @@
 #pragma once
 #include "Json/json.hpp"
 #include <string>
+#include <vector>
+#include <cstdint>
+#include <jni.h>
 
 using json = nlohmann::json;
 
@@ -23,11 +26,12 @@ public:
 
   KeyAuthApp(std::string name, std::string ownerid, std::string version);
 
-  bool init();
+  bool init(std::string hash = "");
   bool login(std::string user, std::string pass);
   bool register_user(std::string user, std::string pass, std::string key);
   bool upgrade(std::string user, std::string key);
   bool license(std::string key);
+  bool fetchStats();
   std::string var(std::string varid);
   std::string getvar(std::string varid);
   bool setvar(std::string varid, std::string vardata);
@@ -35,9 +39,11 @@ public:
   std::string webhook(std::string webid, std::string param,
                       std::string body = "", std::string conttype = "");
   bool check();
+  bool checkblacklist();
   void log(std::string message);
   bool change_username(std::string newname);
   bool logout();
+  std::vector<uint8_t> download(std::string fileid);
 
 private:
   static size_t WriteCallback(void *contents, size_t size, size_t nmemb,
