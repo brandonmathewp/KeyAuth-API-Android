@@ -148,7 +148,7 @@ jobs:
         echo "[+] SUCCESS! Fat library is located at: prebuilt/arm64-v8a/libkeyauth.a"
 
     - name: Upload Artifacts
-      uses: actions/artifacts@v4
+      uses: actions/upload-artifact@v4
       with:
         name: libkeyauth-fat-static
         path: |
