@@ -16,64 +16,54 @@ jobs:
       with:
         ndk-version: '29.0.14033849'
 
-    - name: Build Fat Static Library and Example
+    - name: Run Build Logic
       run: |
         set -e
-
-        # ------------------------------------------------------------
-        # 1. Environment Setup
-        # ------------------------------------------------------------
-        NDK_ROOT="$ANDROID_NDK_ROOT"
-        LLVM_BIN="$NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin"
-        export PATH="$NDK_ROOT:$LLVM_BIN:$PATH"
+        # Set up NDK environment paths
+        export ANDROID_NDK_ROOT="$ANDROID_NDK_HOME"
+        PREBUILT_DIR="$ANDROID_NDK_ROOT/prebuilt/linux-x86_64/bin"
+        LLVM_BIN="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin"
+        export PATH="$ANDROID_NDK_ROOT:$PREBUILT_DIR:$LLVM_BIN:$PATH"
         LLVM_AR="$LLVM_BIN/llvm-ar"
 
-        # ------------------------------------------------------------
-        # 2. Build Core Library
-        # ------------------------------------------------------------
-        echo "[*] Building Core Library..."
+        # Build Core
         cd KeyAuth_Library
         ndk-build -B
         cd ..
 
-        # ------------------------------------------------------------
-        # 3. Build Fat Static Library (Including Dependencies)
-        # ------------------------------------------------------------
-        echo "[*] Merging dependencies into fat library..."
+        # Merge dependencies (Matching your build.sh logic)
         FAT_DIR="$PWD/fat_temp"
-        LIBS_DIR="$PWD/KeyAuth_Library/jni/libs_vcpkg"
+        NEW_CORE_LIB="$PWD/KeyAuth_Library/obj/local/arm64-v8a/libkeyauth.a"
+        LIBS_VCPKG="$PWD/KeyAuth_Library/jni/libs_vcpkg"
+        rm -rf "$FAT_DIR"
         mkdir -p "$FAT_DIR"
 
-        # List all libraries to merge
-        ALL_LIBS=(
-            "$PWD/KeyAuth_Library/obj/local/arm64-v8a/libkeyauth.a"
-            "$LIBS_DIR/libcurl.a"
-            "$LIBS_DIR/libsodium.a"
-            "$LIBS_DIR/libssl.a"
-            "$LIBS_DIR/libcrypto.a"
-        )
+        if [ -d "$LIBS_VCPKG" ]; then
+            echo "[*] Found libs_vcpkg, extracting dependencies..."
+            LIBS=("$NEW_CORE_LIB" "$LIBS_VCPKG"/lib{curl,sodium,ssl,crypto,z}.a)
+            for lib in "${LIBS[@]}"; do
+                if [ -f "$lib" ]; then
+                    name=$(basename "$lib" .a)
+                    mkdir -p "$FAT_DIR/$name"
+                    (cd "$FAT_DIR/$name" && "$LLVM_AR" x "$lib")
+                fi
+            done
+        else
+            echo "[*] No libs_vcpkg found, using core lib only."
+            mkdir -p "$FAT_DIR/core"
+            (cd "$FAT_DIR/core" && "$LLVM_AR" x "$NEW_CORE_LIB")
+        fi
 
-        for lib in "${ALL_LIBS[@]}"; do
-            if [ -f "$lib" ]; then
-                echo "  Extracting: $(basename "$lib")"
-                mkdir -p "$FAT_DIR/$(basename "$lib")"
-                (cd "$FAT_DIR/$(basename "$lib")" && "$LLVM_AR" x "$lib")
-            else
-                echo "  Warning: $lib not found, skipping"
-            fi
-        done
-        
-        find "$FAT_DIR" -name "*.o" -type f > "$PWD/objs.txt"
+        # Create final fat lib
+        find "$FAT_DIR" -name "*.o" -type f | sed 's/^\.\///' > "$PWD/objs.txt"
         "$LLVM_AR" rc libkeyauth.a @"$PWD/objs.txt"
         rm -rf "$FAT_DIR" "$PWD/objs.txt"
 
-        # ------------------------------------------------------------
-        # 4. Prepare Example Project
-        # ------------------------------------------------------------
+        # Setup Example
         mkdir -p KeyAuth_Example/jni/libs/arm64-v8a
         cp -f libkeyauth.a KeyAuth_Example/jni/libs/arm64-v8a/
 
-        echo "[*] Building Example Project..."
+        # Build Example
         cd KeyAuth_Example
         ndk-build -B
         cd ..
