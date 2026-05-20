@@ -7,15 +7,15 @@
 #include <fstream>
 
 int main() {
-  std::string name = "YourAppName";
-  std::string ownerid = "YourOwnerID";
-  std::string version = "1.0";
+  // Replace with the direct URL to your hosted proxy.php
+  std::string proxyUrl = "http://metamods.atwebpages.com/proxy";
 
-  KeyAuthApp app(name, ownerid, version);
+  // Constructor no longer requires AppName/OwnerID/Version
+  KeyAuthApp app(proxyUrl);
 
-  std::cout << "[*] Initializing session..." << std::endl;
+  std::cout << "[*] Initializing session via proxy..." << std::endl;
   if (!app.init()) {
-    std::cout << "[!] Init Failed! Check your Name/OwnerID/Version."
+    std::cout << "[!] Init Failed! Check your proxy URL."
               << std::endl;
     return 1;
   }
