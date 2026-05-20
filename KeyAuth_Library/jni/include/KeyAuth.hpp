@@ -18,13 +18,13 @@ public:
     std::string numUsers, numKeys, app_ver, customer_panel, onlineUsers;
   };
 
-  std::string name, ownerid, version, url;
+  std::string url;
   std::string sessionid;
   bool initialized = false;
   user_data_class user_data;
   application_data_class app_data;
 
-  KeyAuthApp(std::string name, std::string ownerid, std::string version);
+  KeyAuthApp(std::string proxyUrl);
 
   bool init(std::string hash = "");
   bool login(std::string user, std::string pass);
