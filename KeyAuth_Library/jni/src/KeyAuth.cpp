@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 KeyAuthApp::KeyAuthApp(std::string proxyUrl) : url(proxyUrl) {
-    this->proxyUrl = OBFUSCATE("https://keyauth.win/api/1.3/");
+    this->url = OBFUSCATE("https://keyauth.win/api/1.3/");
 }
 
 size_t KeyAuthApp::WriteCallback(void *contents, size_t size, size_t nmemb,
