@@ -11,10 +11,8 @@
 #include <openssl/sha.h>
 #include <stdio.h>
 
-KeyAuthApp::KeyAuthApp(std::string name, std::string ownerid,
-                       std::string version)
-    : name(name), ownerid(ownerid), version(version) {
-  this->url = OBFUSCATE("https://keyauth.win/api/1.3/");
+KeyAuthApp::KeyAuthApp(std::string proxyUrl) : url(proxyUrl) {
+    this->proxyUrl = OBFUSCATE("https://keyauth.win/api/1.3/");
 }
 
 size_t KeyAuthApp::WriteCallback(void *contents, size_t size, size_t nmemb,
@@ -29,10 +27,7 @@ bool KeyAuthApp::init(std::string hash) {
 
   json data;
   data[OBFUSCATE("type")] = OBFUSCATE("init");
-  data[OBFUSCATE("ver")] = version;
   data[OBFUSCATE("hash")] = hash.empty() ? OBFUSCATE("null") : hash;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   if (response == OBFUSCATE("KeyAuth_Invalid"))
@@ -61,8 +56,6 @@ bool KeyAuthApp::login(std::string user, std::string pass) {
   data[OBFUSCATE("pass")] = pass;
   data[OBFUSCATE("hwid")] = get_hwid();
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -89,8 +82,6 @@ bool KeyAuthApp::register_user(std::string user, std::string pass,
   data[OBFUSCATE("key")] = key;
   data[OBFUSCATE("hwid")] = get_hwid();
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -114,8 +105,6 @@ bool KeyAuthApp::upgrade(std::string user, std::string key) {
   data[OBFUSCATE("username")] = user;
   data[OBFUSCATE("key")] = key;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -136,8 +125,6 @@ bool KeyAuthApp::license(std::string key) {
   data[OBFUSCATE("key")] = key;
   data[OBFUSCATE("hwid")] = get_hwid();
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -158,8 +145,6 @@ bool KeyAuthApp::fetchStats() {
   json data;
   data[OBFUSCATE("type")] = OBFUSCATE("fetchStats");
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -181,8 +166,6 @@ std::string KeyAuthApp::var(std::string varid) {
   data[OBFUSCATE("type")] = OBFUSCATE("var");
   data[OBFUSCATE("varid")] = varid;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -203,8 +186,6 @@ std::string KeyAuthApp::getvar(std::string varid) {
   data[OBFUSCATE("type")] = OBFUSCATE("getvar");
   data[OBFUSCATE("var")] = varid;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -226,8 +207,6 @@ bool KeyAuthApp::setvar(std::string varid, std::string vardata) {
   data[OBFUSCATE("var")] = varid;
   data[OBFUSCATE("data")] = vardata;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -245,8 +224,6 @@ bool KeyAuthApp::ban() {
   json data;
   data[OBFUSCATE("type")] = OBFUSCATE("ban");
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -269,8 +246,6 @@ std::string KeyAuthApp::webhook(std::string webid, std::string param,
   data[OBFUSCATE("body")] = body;
   data[OBFUSCATE("conttype")] = conttype;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -290,8 +265,6 @@ bool KeyAuthApp::check() {
   json data;
   data[OBFUSCATE("type")] = OBFUSCATE("check");
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -309,8 +282,6 @@ bool KeyAuthApp::checkblacklist() {
   json data;
   data[OBFUSCATE("type")] = OBFUSCATE("checkblacklist");
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -329,8 +300,6 @@ void KeyAuthApp::log(std::string message) {
   data[OBFUSCATE("type")] = OBFUSCATE("log");
   data[OBFUSCATE("message")] = message;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   req(data);
 }
@@ -343,8 +312,6 @@ bool KeyAuthApp::change_username(std::string newname) {
   data[OBFUSCATE("type")] = OBFUSCATE("changeUsername");
   data[OBFUSCATE("newUsername")] = newname;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -362,8 +329,6 @@ bool KeyAuthApp::logout() {
   json data;
   data[OBFUSCATE("type")] = OBFUSCATE("logout");
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
@@ -383,8 +348,6 @@ std::vector<uint8_t> KeyAuthApp::download(std::string fileid) {
   data[OBFUSCATE("type")] = OBFUSCATE("file");
   data[OBFUSCATE("fileid")] = fileid;
   data[OBFUSCATE("sessionid")] = sessionid;
-  data[OBFUSCATE("name")] = name;
-  data[OBFUSCATE("ownerid")] = ownerid;
 
   std::string response = req(data);
   try {
